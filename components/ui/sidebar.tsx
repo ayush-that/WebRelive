@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Heart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -42,7 +42,7 @@ export function Sidebar({ items, activeItem, setActiveItem }: SidebarProps) {
       </nav>
       <div className="p-4 border-t border-[#18181b]">
         <p className="text-sm text-gray-500">
-          © 2024 WebRelive. All rights reserved.
+          Made with <Heart className="inline h-4 w-4 text-red-500" /> by Ayush
         </p>
       </div>
     </div>
