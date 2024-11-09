@@ -1,30 +1,20 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/ui/sidebar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 import {
   Globe,
   Shield,
   Zap,
   Activity,
-  DollarSign,
-  Users,
   Clock,
   Loader2,
   Layout,
@@ -34,13 +24,13 @@ import {
   Network,
   Search,
 } from "lucide-react";
-import { error } from "console";
 import {
   createWebpageWithName,
   getUserIdByEmail,
   getUserWebpages,
   initializeClients,
 } from "@/utils/db/actions";
+import DeploymentVisual from "@/components/DeploymentVisual";
 
 type Webpage = {
   webpages: {
@@ -249,20 +239,12 @@ export default function Dashboard() {
                       />
                     </div>
                     <Button
-                      // onClick={selectedWebpage ? handleUpdate : handleDeploy}
                       onClick={handleDeploy}
-                      disabled={
-                        isDeploying ||
-                        !domain ||
-                        !content ||
-                        !isInitialized ||
-                        userId === null
-                      }
+                      disabled={isDeploying}
                       size="lg"
                       className="bg-blue-600 hover:bg-blue-500 text-white"
                     >
-                      {selectedWebpage ? "Update Website" : "Deploy"}
-                      {/* {isDeploying ? (
+                      {isDeploying ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           {selectedWebpage ? "Updating..." : "Deploying..."}
@@ -271,14 +253,14 @@ export default function Dashboard() {
                         "Update Website"
                       ) : (
                         "Deploy"
-                      )} */}
+                      )}
                     </Button>
-                    {/* {deploymentError && (
+                    {deploymentError && (
                       <p className="text-red-400 mt-2">{deploymentError}</p>
                     )}
                     {deployedUrl && (
                       <DeploymentVisual deployedUrl={deployedUrl} />
-                    )} */}
+                    )}
                   </div>
                 </CardContent>
               </Card>
