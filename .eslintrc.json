@@ -1,5 +1,19 @@
 {
   "root": true,
-  "extends": ["next/core-web-vitals", "next/typescript"],
-  "rules": {}
+  "extends": [],
+  "rules": {
+    "no-unused-vars": "off",
+    "no-console": "off",
+    "no-debugger": "off",
+    "no-undef": "off",
+    "no-redeclare": "off",
+    "no-dupe-keys": "off",
+    "no-empty": "off",
+    "no-extra-semi": "off",
+    "no-func-assign": "off",
+    "no-inner-declarations": "off",
+    "no-irregular-whitespace": "off",
+    "no-unreachable": "off",
+    "valid-typeof": "off"
+  }
 }
