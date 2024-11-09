@@ -44,6 +44,7 @@ import {
   initializeClients,
   updateWebpageContent,
 } from "@/utils/db/actions";
+import { AIWebsiteGenerator } from "@/components/AIWebsiteGenerator";
 
 type Webpage = {
   webpages: {
@@ -64,13 +65,8 @@ export default function Dashboard() {
   const sidebarItems = [
     { name: "Sites", icon: Layout },
     { name: "Deploy", icon: Rocket },
-    { name: "Manage Websites", icon: GitBranch },
-    { name: "Tokens", icon: Zap },
     { name: "AI Website", icon: Cpu },
-    { name: "Decentralized CDN", icon: Network },
     { name: "Search Engine", icon: Search },
-    { name: "Example Websites", icon: Globe },
-    { name: "Smart Contracts", icon: Shield },
   ];
 
   const [code, setCode] = useState(``);
@@ -88,9 +84,64 @@ export default function Dashboard() {
   const [userWebpages, setUserWebpages] = useState<Webpage[]>([]);
   const [livePreview, setLivePreview] = useState(code);
 
+  const [aiDeploymentStatus, setAiDeploymentStatus] = useState({
+    isDeploying: false,
+    deployedUrl: "",
+    ipfsUrl: "",
+    error: "",
+  });
+
   const [activeChart, setActiveChart] = useState<"desktop" | "mobile">(
     "desktop"
   );
+
+  const handleAIWebsiteDeploy = async (domain: string, content: string) => {
+    setAiDeploymentStatus({
+      isDeploying: true,
+      deployedUrl: "",
+      ipfsUrl: "",
+      error: "",
+    });
+    setDeploymentError("");
+    console.log(userId);
+
+    try {
+      if (!isInitialized || userId === null) {
+        throw new Error("Cannot deploy: missing initialization or user ID");
+      }
+
+      const { webpage, txHash, cid, deploymentUrl, name, w3nameUrl } =
+        await createWebpageWithName(userId, domain, content);
+
+      const ipfsUrl = `https://dweb.link/ipfs/${cid}`;
+      const finalDeployedUrl = w3nameUrl || deploymentUrl;
+
+      setAiDeploymentStatus({
+        isDeploying: false,
+        deployedUrl: finalDeployedUrl,
+        ipfsUrl: ipfsUrl,
+        error: "",
+      });
+
+      setDeployedUrl(finalDeployedUrl);
+      setW3name(name);
+      console.log(
+        `Deployed AI-generated website successfully. Transaction hash: ${txHash}, CID: ${cid}, URL: ${finalDeployedUrl}, W3name: ${name}`
+      );
+
+      const updatedWebpages = await getUserWebpages(userId);
+      setUserWebpages(updatedWebpages as Webpage[]);
+    } catch (error: any) {
+      console.error("AI website deployment failed:", error);
+      ({
+        isDeploying: false,
+        deployedUrl: "",
+        ipfsUrl: "",
+        error: `AI website deployment failed: ${error.message}`,
+      });
+      setDeploymentError(`AI website deployment failed: ${error.message}`);
+    }
+  };
 
   const [visitorData, setVisitorData] = useLocalStorage("visitorData", {
     desktop: 0,
@@ -126,7 +177,6 @@ export default function Dashboard() {
 
   const chartData = useMemo(() => {
     if (userWebpages.length === 0) {
-      // If no websites, return an array of 90 days with 0 values
       return Array.from({ length: 90 }, (_, i) => ({
         date: new Date(Date.now() - (89 - i) * 24 * 60 * 60 * 1000)
           .toISOString()
@@ -290,10 +340,6 @@ export default function Dashboard() {
           setActiveItem={setActiveTab}
         />
         <div className="flex-1 p-10 ml-64">
-          <h1 className="text-4xl font-bold mb-8 text-white">
-            Welcome to Your Dashboard
-          </h1>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <Card className="bg-[#0a0a0a] border-[#18181b]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -580,6 +626,152 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               )}
+            </>
+          )}
+
+          {activeTab === "Manage Websites" && (
+            <div>
+              <h2 className="text-2xl font-bold mb-2 text-white">
+                Manage Your Websites
+              </h2>
+              <p className="mt-2 mb-6 text-gray-400">
+                Note: This section allows manual management of your websites.
+                Automated CI/CD features are coming soon!
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userWebpages.map((webpage) => (
+                  <Card
+                    key={webpage.webpages.id}
+                    className="bg-[#0a0a0a] border-[#18181b]"
+                  >
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-white">
+                        <span className="flex items-center">
+                          <Globe className="mr-2 h-4 w-4" />
+                          {webpage.webpages.domain}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p
+                        className="mb-2 text-sm text-blue-400 cursor-pointer hover:underline overflow-hidden text-ellipsis"
+                        onClick={() =>
+                          handleUrlClick(
+                            webpage.webpages.name
+                              ? `https://dweb.link/ipfs/${webpage.webpages.cid}`
+                              : webpage.deployments?.deploymentUrl || ""
+                          )
+                        }
+                        title={
+                          webpage.webpages.name
+                            ? `https://dweb.link/ipfs/${webpage.webpages.cid}`
+                            : webpage.deployments?.deploymentUrl
+                        }
+                      >
+                        {truncateUrl(
+                          webpage.webpages.name
+                            ? `https://dweb.link/ipfs/${webpage.webpages.cid}`
+                            : webpage.deployments?.deploymentUrl || ""
+                        )}
+                      </p>
+                      <p className="mb-2 text-sm text-gray-500">
+                        Deployed:{" "}
+                        {webpage.deployments?.deployedAt?.toLocaleString()}
+                      </p>
+                      <p className="mb-2 text-sm overflow-hidden text-ellipsis text-gray-500">
+                        TX: {webpage.deployments?.transactionHash.slice(0, 10)}
+                        ...
+                      </p>
+                      <Button
+                        onClick={() => handleEdit(webpage)}
+                        className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+                      >
+                        Edit
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "Tokens" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="bg-[#0a0a0a] border-[#18181b]">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-white">Tokens</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg text-gray-400">Coming soon</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "AI Website" && (
+            <Card className="bg-[#0a0a0a] border-[#18181b]">
+              <CardHeader>
+                <CardTitle className="text-2xl text-white">
+                  AI Website Generator
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AIWebsiteGenerator
+                  onDeploy={handleAIWebsiteDeploy}
+                  isDeploying={aiDeploymentStatus.isDeploying}
+                />
+                {aiDeploymentStatus.isDeploying && (
+                  <p className="mt-4 text-blue-400">
+                    Deploying AI-generated website...
+                  </p>
+                )}
+                {aiDeploymentStatus.error && (
+                  <p className="mt-4 text-red-400">
+                    {aiDeploymentStatus.error}
+                  </p>
+                )}
+                {aiDeploymentStatus.deployedUrl && (
+                  <div className="mt-4">
+                    <p className="text-green-400">
+                      AI-generated website deployed successfully!
+                    </p>
+                    <p className="text-white">
+                      Deployed URL:{" "}
+                      <a
+                        href={aiDeploymentStatus.deployedUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        {aiDeploymentStatus.deployedUrl}
+                      </a>
+                    </p>
+                    <p className="text-white">
+                      IPFS URL:{" "}
+                      <a
+                        href={aiDeploymentStatus.ipfsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        {aiDeploymentStatus.ipfsUrl}
+                      </a>
+                    </p>
+                    <DeploymentVisual
+                      deployedUrl={aiDeploymentStatus.deployedUrl}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          {deploymentError && (
+            <p className="text-red-400 mt-2">{deploymentError}</p>
+          )}
+
+          {activeTab === "Search Engine" && (
+            <>
+              <p>Coming Soon (fingers crossed)</p>
             </>
           )}
         </div>

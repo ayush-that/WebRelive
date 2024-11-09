@@ -50,7 +50,7 @@ export function AIWebsiteGenerator({
             id="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="E.g., A simple landing page for a coffee shop with a hero section, about us, and contact form..."
+            placeholder="Design a modern, minimal website for a wellness platform using calming colors. Include sections for services, a blog, and testimonials, with a clear call-to-action button and rounded icons."
             className="mt-1 bg-[#0a0a0a] text-white border-gray-700"
             rows={4}
           />
