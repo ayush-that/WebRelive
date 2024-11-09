@@ -303,7 +303,7 @@ export default function Dashboard() {
                       />
                     </div>
                     <Button
-                      onClick={handleDeploy}
+                      onClick={selectedWebpage ? handleUpdate : handleDeploy}
                       disabled={isDeploying}
                       size="lg"
                       className="bg-blue-600 hover:bg-blue-500 text-white"
