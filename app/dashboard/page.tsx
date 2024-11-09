@@ -28,6 +28,7 @@ import {
   createWebpageWithName,
   getUserIdByEmail,
   getUserWebpages,
+  getWebpageContent,
   initializeClients,
 } from "@/utils/db/actions";
 import DeploymentVisual from "@/components/DeploymentVisual";
@@ -134,6 +135,15 @@ export default function Dashboard() {
     } finally {
       setIsDeploying(false);
     }
+  };
+
+  const handleEdit = async (webpage: Webpage) => {
+    setSelectedWebpage(webpage);
+    setDomain(webpage.webpages.domain);
+    const webpageContent = await getWebpageContent(webpage.webpages.id);
+    setContent(webpageContent);
+    setW3name(webpage.webpages.name);
+    setActiveTab("Deploy");
   };
 
   return (

@@ -237,3 +237,24 @@ export async function getUserWebpages(userId: number | null) {
     .orderBy(desc(Deployments.deployedAt))
     .execute();
 }
+
+export async function getWebpageContent(webpageId: number): Promise<string> {
+  const webpage = await db
+    .select()
+    .from(Webpages)
+    .where(eq(Webpages.id, webpageId))
+    .leftJoin(Deployments, eq(Webpages.id, Deployments.webpageId))
+    .orderBy(desc(Deployments.deployedAt))
+    .limit(1)
+    .execute();
+
+  if (webpage.length === 0) {
+    throw new Error("Webpage not found");
+  }
+
+  const cid = webpage[0].webpages.cid;
+  const response = await fetch(`https://${cid}.ipfs.w3s.link/`);
+  const content = await response.text();
+
+  return content;
+}
