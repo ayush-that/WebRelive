@@ -61,6 +61,7 @@ export default function Dashboard() {
     { name: "Smart Contracts", icon: Shield },
   ];
 
+  const [code, setCode] = useState(``);
   const { user, authenticated } = usePrivy();
   const [deploymentError, setDeploymentError] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
@@ -73,6 +74,7 @@ export default function Dashboard() {
   const [w3name, setW3name] = useState<string | null>(null);
   const [deployedUrl, setDeployedUrl] = useState("");
   const [userWebpages, setUserWebpages] = useState<Webpage[]>([]);
+  const [livePreview, setLivePreview] = useState(code);
 
   useEffect(() => {
     async function fetchUserId() {
@@ -162,7 +164,6 @@ export default function Dashboard() {
       );
       setLivePreview(content);
 
-      // Update the selected webpage in the state
       setSelectedWebpage((prev) => {
         if (!prev) return null;
         return {
