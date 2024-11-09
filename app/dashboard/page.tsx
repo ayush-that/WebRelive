@@ -7,8 +7,8 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import DeploymentVisual from "@/components/DeploymentVisual";
 
 import {
   Globe,
@@ -30,8 +30,8 @@ import {
   getUserWebpages,
   getWebpageContent,
   initializeClients,
+  updateWebpageContent,
 } from "@/utils/db/actions";
-import DeploymentVisual from "@/components/DeploymentVisual";
 
 type Webpage = {
   webpages: {
@@ -132,6 +132,59 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Deployment failed:", error);
       setDeploymentError("Deployment failed. Please try again.");
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    setIsDeploying(true);
+    setDeploymentError("");
+    try {
+      if (!isInitialized || userId === null || !selectedWebpage) {
+        throw new Error(
+          "Cannot update: missing initialization, user ID, or selected webpage"
+        );
+      }
+
+      const { txHash, cid, deploymentUrl, w3nameUrl } =
+        await updateWebpageContent(
+          userId,
+          selectedWebpage.webpages.id,
+          content
+        );
+
+      setDeployedUrl(w3nameUrl || deploymentUrl);
+      console.log(
+        `Updated successfully. Transaction hash: ${txHash}, CID: ${cid}, URL: ${
+          w3nameUrl || deploymentUrl
+        }`
+      );
+      setLivePreview(content);
+
+      // Update the selected webpage in the state
+      setSelectedWebpage((prev) => {
+        if (!prev) return null;
+        return {
+          webpages: {
+            ...prev.webpages,
+            cid,
+          },
+          deployments: {
+            id: prev.deployments?.id ?? 0,
+            deploymentUrl,
+            transactionHash: txHash,
+            deployedAt: new Date(),
+          },
+        };
+      });
+
+      // Refresh the user's webpages
+      const updatedWebpages = await getUserWebpages(userId);
+      setUserWebpages(updatedWebpages as Webpage[]);
+    } catch (error: any) {
+      console.error("Update failed:", error);
+      setDeploymentError(`Update failed: ${error.message}`);
     } finally {
       setIsDeploying(false);
     }

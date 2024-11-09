@@ -38,11 +38,11 @@ export function DecentralizedCDN() {
   useEffect(() => {
     async function initializeClient() {
       const newClient = await create();
-      await newClient.authenticate({
-        email: `${process.env.NEXT_PUBLIC_W3UP_EMAIL}@example.com`,
-      });
+      await newClient.authorize("user@example.com");
       const space = await newClient.createSpace("my-app-space");
-      await newClient.setCurrentSpace(space.did());
+      await newClient.setCurrentSpace(
+        `did:key:${space.did().split(":").pop()}`
+      );
       setClient(newClient);
     }
     initializeClient();

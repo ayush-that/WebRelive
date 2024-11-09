@@ -238,6 +238,68 @@ export async function getUserWebpages(userId: number | null) {
     .execute();
 }
 
+export async function updateWebpageContent(
+  userId: number,
+  webpageId: number,
+  newContent: string
+) {
+  const [webpage] = await db
+    .select()
+    .from(Webpages)
+    .where(eq(Webpages.id, webpageId))
+    .execute();
+
+  if (!webpage) {
+    throw new Error("Webpage not found");
+  }
+
+  const { txHash, cid } = await storeWebpageOnChain(webpage.domain, newContent);
+  const deploymentUrl = `https://${cid}.ipfs.w3s.link/`;
+
+  await db
+    .update(Webpages)
+    .set({ cid })
+    .where(eq(Webpages.id, webpageId))
+    .execute();
+
+  const [existingDeployment] = await db
+    .select()
+    .from(Deployments)
+    .where(eq(Deployments.webpageId, webpageId))
+    .execute();
+
+  if (existingDeployment) {
+    await db
+      .update(Deployments)
+      .set({
+        transactionHash: txHash,
+        deploymentUrl,
+        deployedAt: new Date(),
+      })
+      .where(eq(Deployments.id, existingDeployment.id))
+      .execute();
+  } else {
+    await db
+      .insert(Deployments)
+      .values({
+        userId,
+        webpageId,
+        transactionHash: txHash,
+        deploymentUrl,
+      })
+      .execute();
+  }
+
+  if (webpage.name) {
+    await updateNameContent(userId, webpage.name, newContent);
+    const resolvedCID = await resolveNameToCID(webpage.name);
+    const w3nameUrl = `https://${resolvedCID}.ipfs.dweb.link`;
+    return { txHash, cid, deploymentUrl, w3nameUrl };
+  }
+
+  return { txHash, cid, deploymentUrl };
+}
+
 export async function getWebpageContent(webpageId: number): Promise<string> {
   const webpage = await db
     .select()
