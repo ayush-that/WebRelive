@@ -21,7 +21,7 @@ export default function Home() {
             Hello <span className="text-primary">People!</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Welcome to WebRelive.{" "}
+            Welcome to WebRe.live{" "}
           </p>
           <Link href={"/dashboard"}>
             <Button size="lg" className="mr-4">

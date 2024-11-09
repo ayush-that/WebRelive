@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LucideIcon, Heart } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
 
 interface SidebarProps {
   items: {
@@ -15,13 +13,7 @@ interface SidebarProps {
 
 export function Sidebar({ items, activeItem, setActiveItem }: SidebarProps) {
   return (
-    <div className="flex flex-col w-64 bg-[#0a0a0a] border-r border-[#18181b] text-white h-screen fixed left-0 top-0 overflow-y-auto">
-      <div className="p-6 border-b border-[#18181b]">
-        <Link href="/" className="flex items-center space-x-2">
-          <Image src="/svg/logo.svg" alt="logo" width={32} height={32} />
-          <span className="text-xl font-bold">WebRelive</span>
-        </Link>
-      </div>
+    <div className="flex flex-col w-64 bg-[#0a0a0a] border-r border-[#18181b] text-white fixed left-0 top-16 bottom-0 overflow-y-auto">
       <nav className="flex-1 p-4">
         {items.map((item) => (
           <Button
@@ -30,7 +22,7 @@ export function Sidebar({ items, activeItem, setActiveItem }: SidebarProps) {
             className={cn(
               "w-full justify-start px-4 py-5 mb-2 text-left rounded-lg transition-colors",
               activeItem === item.name
-                ? "bg[#0a0a0a] border-2 text-white"
+                ? "bg-[#0a0a0a] border-2 text-white"
                 : "text-gray-400 hover:bg-gray-800 hover:text-white"
             )}
             onClick={() => setActiveItem(item.name)}
@@ -42,7 +34,7 @@ export function Sidebar({ items, activeItem, setActiveItem }: SidebarProps) {
       </nav>
       <div className="p-4 border-t border-[#18181b]">
         <p className="text-sm text-gray-500">
-          Made with <Heart className="inline h-4 w-4 text-red-500" /> by Ayush
+          Made with <Heart className="inline h-4 w-4 text-gray-500" /> by Ayush
         </p>
       </div>
     </div>

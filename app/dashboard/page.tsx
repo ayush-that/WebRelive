@@ -1,15 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/ui/sidebar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import DeploymentVisual from "@/components/DeploymentVisual";
-
+import { Bar, BarChart, CartesianGrid, XAxis, Cell } from "recharts";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import {
   Globe,
   Shield,
@@ -75,6 +87,75 @@ export default function Dashboard() {
   const [deployedUrl, setDeployedUrl] = useState("");
   const [userWebpages, setUserWebpages] = useState<Webpage[]>([]);
   const [livePreview, setLivePreview] = useState(code);
+
+  const [activeChart, setActiveChart] = useState<"desktop" | "mobile">(
+    "desktop"
+  );
+
+  const [visitorData, setVisitorData] = useLocalStorage("visitorData", {
+    desktop: 0,
+    mobile: 0,
+    lastUpdated: null as string | null,
+    dailyData: [] as { date: string; desktop: number; mobile: number }[],
+  });
+
+  const total = useMemo(
+    () => ({
+      desktop: userWebpages.length === 0 ? 0 : visitorData.desktop || 0,
+      mobile: userWebpages.length === 0 ? 0 : visitorData.mobile || 0,
+    }),
+    [visitorData.desktop, visitorData.mobile, userWebpages.length]
+  );
+
+  const handleUrlClick = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const chartConfig = {
+    desktop: { label: "Desktop", color: "hsl(var(--chart-1))" },
+    mobile: { label: "Mobile", color: "hsl(var(--chart-2))" },
+  };
+
+  const truncateUrl = (url: string, maxLength: number = 30) => {
+    if (!url) return "";
+    if (url.length <= maxLength) return url;
+    const start = url.substring(0, maxLength / 2 - 2);
+    const end = url.substring(url.length - maxLength / 2 + 2);
+    return `${start}...${end}`;
+  };
+
+  const chartData = useMemo(() => {
+    if (userWebpages.length === 0) {
+      // If no websites, return an array of 90 days with 0 values
+      return Array.from({ length: 90 }, (_, i) => ({
+        date: new Date(Date.now() - (89 - i) * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+        desktop: 0,
+        mobile: 0,
+      }));
+    }
+    return visitorData.dailyData && visitorData.dailyData.length > 0
+      ? visitorData.dailyData
+      : [
+          {
+            date: new Date().toISOString().split("T")[0],
+            desktop: 0,
+            mobile: 0,
+          },
+        ];
+  }, [visitorData.dailyData, userWebpages.length]);
+
+  useEffect(() => {
+    async function fetchUserWebpages() {
+      if (userId) {
+        const webpages = await getUserWebpages(userId);
+        console.log("=======web pages", webpages);
+        setUserWebpages(webpages as Webpage[]);
+      }
+    }
+    fetchUserWebpages();
+  }, [userId]);
 
   useEffect(() => {
     async function fetchUserId() {
@@ -223,7 +304,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white">
-                  {/* {userWebpages.length} */}
+                  {userWebpages.length}
                 </div>
               </CardContent>
             </Card>
@@ -236,7 +317,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white">
-                  {/* {userWebpages.length > 0
+                  {userWebpages.length > 0
                     ? new Date(
                         Math.max(
                           ...userWebpages
@@ -244,7 +325,7 @@ export default function Dashboard() {
                             .map((w) => w.deployments!.deployedAt!.getTime())
                         )
                       ).toLocaleDateString()
-                    : "N/A"} */}
+                    : "N/A"}
                 </div>
               </CardContent>
             </Card>
@@ -257,13 +338,163 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white">
-                  {/* {userWebpages.filter((w) => w.deployments).length} */}
+                  {userWebpages.filter((w) => w.deployments).length}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {activeTab === "Sites" && <p>Sites</p>}
+          {activeTab === "Sites" && (
+            <>
+              <Card className="bg-[#0a0a0a] border-[#18181b] mb-8">
+                <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+                  <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
+                    <CardTitle className="text-2xl text-white">
+                      Website Traffic Overview
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Visitor trends across desktop and mobile platforms over
+                      the past quarter
+                    </CardDescription>
+                  </div>
+                  <div className="flex">
+                    {["desktop", "mobile"].map((key) => {
+                      const chart = key as keyof typeof chartConfig;
+                      return (
+                        <button
+                          key={chart}
+                          data-active={activeChart === chart}
+                          className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/20 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
+                          onClick={() => setActiveChart(chart)}
+                        >
+                          <span className="text-sm text-white">
+                            {chartConfig[chart].label}
+                          </span>
+                          <span className="text-5xl font-bold text-white">
+                            {total[chart].toLocaleString()}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </CardHeader>
+                <CardContent className="px-2 sm:p-6">
+                  <ChartContainer
+                    config={chartConfig}
+                    className="aspect-auto h-[250px] w-full bg-[#0a0a0a]"
+                  >
+                    <BarChart
+                      data={chartData}
+                      margin={{ left: 0, right: 0, top: 0, bottom: 20 }}
+                    >
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        minTickGap={32}
+                        tick={{ fill: "#666" }}
+                        tickFormatter={(value) => {
+                          const date = new Date(value);
+                          return date.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          });
+                        }}
+                      />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            className="bg-[#1a1a1a] text-white border-none rounded-md shadow-lg"
+                            nameKey={activeChart}
+                            labelFormatter={(value) => {
+                              return new Date(value).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              );
+                            }}
+                          />
+                        }
+                      />
+                      <Bar
+                        dataKey={activeChart}
+                        fill="#3b82f6"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                  {userWebpages.length === 0 && (
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      It may take up to 24 hours to update the count.
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-0 text-center">
+                    Please note: It may take up to 48 hours to load and display
+                    all data.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userWebpages.map((webpage) => (
+                  <Card
+                    key={webpage.webpages.id}
+                    className="bg-[#0a0a0a] border-[#18181b]"
+                  >
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-white">
+                        <span className="flex items-center">
+                          <Globe className="mr-2 h-4 w-4" />
+                          {webpage.webpages.domain}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p
+                        className="mb-2 text-sm text-blue-400 cursor-pointer hover:underline overflow-hidden text-ellipsis"
+                        onClick={() =>
+                          handleUrlClick(
+                            webpage.webpages.name
+                              ? `https://dweb.link/ipfs/${webpage.webpages.cid}`
+                              : webpage.deployments?.deploymentUrl || ""
+                          )
+                        }
+                        title={
+                          webpage.webpages.name
+                            ? `https://dweb.link/ipfs/${webpage.webpages.cid}`
+                            : webpage.deployments?.deploymentUrl
+                        }
+                      >
+                        {truncateUrl(
+                          webpage.webpages.name
+                            ? `https://dweb.link/ipfs/${webpage.webpages.cid}`
+                            : webpage.deployments?.deploymentUrl || ""
+                        )}
+                      </p>
+                      <p className="mb-2 text-sm text-gray-500">
+                        Deployed:{" "}
+                        {webpage.deployments?.deployedAt?.toLocaleString()}
+                      </p>
+                      <p className="mb-2 text-sm overflow-hidden text-ellipsis text-gray-500">
+                        TX: {webpage.deployments?.transactionHash.slice(0, 10)}
+                        ...
+                      </p>
+                      <Button
+                        onClick={() => handleEdit(webpage)}
+                        className="w-full bg-secondary hover:bg-gray-700 text-white"
+                      >
+                        Edit
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
           {activeTab === "Deploy" && (
             <>
               <Card className="bg-[#0a0a0a] border-[#18181b]">

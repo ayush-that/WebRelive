@@ -23,8 +23,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <title>WebRe.live</title>
+      <link rel="icon" href="/svg/logo.svg" />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ paddingTop: "64px" }}
       >
         <PrivyProvider
           appId="cm39uwxau049p146edd5b7bjb"
